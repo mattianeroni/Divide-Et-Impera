@@ -84,10 +84,9 @@ class Shuffler (Algorithm):
 
 
 
-    def __init__ (self) -> None:
+    def __init__ (self):
         """
         Initialize.
-
         """
         super().__init__()
 
@@ -101,9 +100,8 @@ class Shuffler (Algorithm):
 
         """
 
-        random.shuffle (tour)
-        solution : Solution = evaluate (tour, current_value, current_node, distances)
-        self.set_best_solution (solution)
+        random.shuffle (list(tour))
+        self.set_best_solution (evaluate (tuple(tour), current_value, current_node, distances))
 
 
 
@@ -128,7 +126,7 @@ class RandomSearch (Algorithm):
 
 
 
-    def __init__ (self, iter : int = 1000) -> None:
+    def __init__ (self, iter = 1000):
         """
         Initialize.
 
@@ -137,28 +135,27 @@ class RandomSearch (Algorithm):
 
         """
         super().__init__()
-
         self.iter = iter
 
 
 
 
 
-    def exe (self, current_value : int, tour : List[Node], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
+    def exe (self, current_value, tour, current_node, distances):
         """
         This is the execution method of the algorithm. It inherits from the exe abstract
         method in the Algorithm abstract class.
 
         """
-        s : Shuffler = Shuffler()
-        best : Solution = evaluate (tour, current_value, current_node, distances)
-        i : int = 0
+        s = Shuffler()
+        best = evaluate (tour, current_value, current_node, distances)
+        i = 0
 
         while i < self.iter:
             s.exe (current_value, tour, current_node, distances)
-            solution : Solution = s.get_best_solution
+            solution = s.get_best_solution
             i += 1
-            if best is None or solution.cost < best.cost:
+            if cost(solution) < cost(best):
                 best = solution
                 
         self.set_best_solution (best)
