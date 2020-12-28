@@ -184,21 +184,12 @@ class TwoOpt (Algorithm):
     
     """
     
-    def __init__ (self, iter, deep = False):
+    def __init__ (self):
         """
         Initialize.
         
-        :param iter: the number of iterations the algorithm is repeated
-        :param deep: If this parameter is True, every time a better solution
-                     is found, before going to the next iteration the algorithm
-                     re-try all the couples of cutting points from the beginning
-                     of the tour.
-        
         """
         super().__init__()
-        
-        self.iter = iter
-        self.deep = deep
         
         
         
@@ -211,21 +202,17 @@ class TwoOpt (Algorithm):
         procedure.
         
         """
-        best = evaluate (tour, current_value, current_node, distances)
-            
-        for _ in range(self.iter):
-            i = 0
-            while i < len(tour) - 1:
-                j = i + 1
-                while j < len(tour):
-                    new_tour = tour[:i] + list(reversed(tour[i:j])) + tour[j:]
-                    new_sol = evaluate (new_tour, current_value, current_node, distances)
-                    j += 1
-                    if new_sol.cost < best.cost:
-                        best = new_sol
-                        if self.deep:
-                            i, j = 0, 1 
-                i += 1
+        current_path = list(tour)
+        random.shuffle(current_path)
+        best = evaluate (tuple(current_path), current_value, current_node, distances)
+        i = 0
+        while i < len(tour) - 2:
+            j = i + 2
+            while j < len(tour):
+                new_sol = evaluate(tuple(current_path[:i] + list(reversed(current_path[i:j])) + current_path[j:]), current_value, current_node, distances)
+                if cost(new_sol) < cost(best):
+                    best = new_sol
+                    i, j = 0, 2
             
         self.set_best_solution (best)
         
