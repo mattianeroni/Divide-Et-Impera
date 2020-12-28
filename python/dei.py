@@ -1,4 +1,3 @@
-from __future__ import annotations
 """
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -37,86 +36,81 @@ Author contact: mattia.neroni@unipr.it.
 """
 Libraries imported from Python 3 standard library.
 """
-from typing import List, Tuple, Optional, Sequence, Set, Dict, Union, cast
-
 import random
 import copy
+import numpy as np
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from collections import namedtuple
+
+
+
+
+"""
+This class represent a node of the graph, which is representative of a 
+customer or location to be visited within a certain time window, which
+goes from its <readytime> to its <duedate>.
+
+:attr id: The unique id of the node
+:attr x: The x coordinate of the node
+:attr y: The y coordinate of the node
+:attr readytime: The starting time of the window in which the node is available
+:attr duedate: The closing time of the window in which the node is available
+"""
+Node = namedtuple("Node", "id x y open close")
 
 
 
 
 
 
-@dataclass
-class Node:
-    """
-    This class represent a node of the graph, which is representative of a 
-    customer or location to be visited within a certain time window, which
-    goes from its <readytime> to its <duedate>.
 
-    :attr id: The unique id of the node
-    :attr x: The x coordinate of the node
-    :attr y: The y coordinate of the node
-    :attr readytime: The starting time of the window in which the node is available
-    :attr duedate: The closing time of the window in which the node is available
+"""
+This class represents a solution of the algorithm.
 
-    """
-
-    id : int
-    x : int
-    y : int
-    readytime : int
-    duedate : int
-
-
-
-    @property
-    def position (self) -> Tuple[int,int]:
-        """
-        This property returns the position of the node as a <tuple> indicating its
-        x and y coordinates.
-
-        """
-        return self.x, self.y
+:attr result: the solution in itself represented as a <tuple>, where each element
+              is the ID of the node to visit in that position.
+:attr value: the cost of the solution (i.e. total travel time, makespan)
+:attr delay: the delay cumulated during the tour.
+"""
+Solution = namedtuple("Solution", "result value delay")
     
 
 
 
-
-
-@dataclass
-class Solution:
+    
+    
+    
+def cost (solution):
     """
-    This class represents a solution of the algorithm.
+    The cost of the solution is calculated considering:
+        - The travel time.
+        - The cumulated waiting time every time a node is reached before its opening time.
+        - The cumulated delay as a sort of Lagrangian relaxation to penalise the solutions
+          that reach the nodes after the closing time. 
+    """
+    return solution.value + solution.delay
 
 
-    :attr result: the solution in itself represented as a <list>, where each element
-                    is the ID of the node to visit in that position.
-    :attr value: the cost of the solution (i.e. total travel time, makespan)
-    :attr delay: the delay cumulated during the tour.
+
+
+
+
+def euclidean (node1, node2):
+    """
+    This function calculates the euclidean distance between two nodes.
+
+    To be processed by this function, the nodes must be data structures equal
+    to that one handled by the DivideEtImpera (DEI) algorithm (see Node class).
+
+    :param node1: The first node
+    :param mode2: The second node
+    :return: the euclidean distance rounded to 0 decimals.
 
     """
-    result : List[Node]
-    value : int
-    delay : int
+    return int(((node1.x - node2.x)**2 + (node1.y - node2.y)**2)**0.5)
 
 
-
-
-    @property
-    def cost (self) -> int:
-        """
-        The cost of the solution is calculated considering:
-            - The travel time.
-            - The cumulated waiting time every time a node is reached before its opening time.
-            - The cumulated delay as a sort of Lagrangian relaxation to penalise the solutions
-              that reach the nodes after the closing time. 
-
-        """
-        return self.value + self.delay
 
 
 
@@ -146,6 +140,8 @@ class BaseNotFound (Exception):
 
 
 
+
+
 class Algorithm (ABC):
     """
     This is an abstract class the algorithms included in the Divide Et Impera must inherit from.
@@ -156,30 +152,31 @@ class Algorithm (ABC):
     """
 
 
-    def __init__(self) -> None:
+    def __init__(self):
         """
         Initialize.
 
         It only initialize the best solution.
         """
-
-        self._bestsolution : Solution
+        self.__bestsolution = None
 
 
 
 
     @abstractmethod
-    def exe (self, current_value : int, tour : List[Node], current_node : Node, distances : Dict[int, Dict[int, int]]) -> None:
+    def exe (self, current_value, tour, current_node, distances):
         """
         This is the method to override for the execution of the algorithm.
         All the main procedure of the implemented algorithm must be written in this method.
 
         This method do not must return something.
         The best solution found with the procedure will be returned next by using get_best_solution property.
-
-        :param tour: the nodes to visit
-        :param current_node: the starting node to compleate the tour
-        :param distances: the distance matrix of the graph
+        
+        :param current_value: The current time when started this part of the tour (necessary
+                                for delays).
+        :param tour: The nodes to visit
+        :param current_node: The starting node to compleate the tour
+        :param distances: The distance matrix of the graph
 
         """
         pass
@@ -188,7 +185,7 @@ class Algorithm (ABC):
 
 
     @property
-    def get_best_result (self) -> Tuple[List[int], int, int]:
+    def get_best_result (self):
         """
         This property returns the best solution found so far, its cost, and the cumulated delay.
         If the best solution has not been set already, an Exception is returned.
@@ -196,18 +193,17 @@ class Algorithm (ABC):
         :return: <result>, <value>, <delay>
 
         """
-
-        if not self._bestsolution:
+        if not self.__bestsolution:
             raise BestNotDefined
 
-        return [node.id for node in self._bestsolution.result], self._bestsolution.value, self._bestsolution.delay
+        return self.__bestsolution.result, self.__bestsolution.value, self.__bestsolution.delay
 
 
 
 
 
     @property
-    def get_best_solution (self) -> Solution:
+    def get_best_solution (self):
         """
         This property returns the best solution found so far by returning the solution
         instance in itself with all its attributes.
@@ -216,45 +212,20 @@ class Algorithm (ABC):
         :return: the current best solution
 
         """
-
-        if not self._bestsolution:
+        if not self.__bestsolution:
             raise BestNotDefined
 
-        return self._bestsolution
+        return self.__bestsolution
 
 
 
 
 
-    def set_best_solution (self, best : Solution) -> None:
+    def set_best_solution (self, best):
         """
         This method sets the best solution of the algorithm.
         """
-
-        self._bestsolution = copy.copy(best)
-
-
-
-
-
-
-
-
-def euclidean (node1 : Node, node2 : Node) -> int:
-    """
-    This function calculates the euclidean distance between two nodes.
-
-    To be processed by this function, the nodes must be data structures equal
-    to that one handled by the DivideEtImpera (DEI) algorithm (see Node class).
-
-    :param node1: The first node
-    :param mode2: The second node
-    :return: the euclidean distance rounded to 0 decimals.
-
-    """
-    return int(((node1.x - node2.x)**2 + (node1.y - node2.y)**2)**0.5)
-
-
+        self.__bestsolution = copy.copy(best)
 
 
 
@@ -264,7 +235,7 @@ def euclidean (node1 : Node, node2 : Node) -> int:
 class DivideEtImpera:
 
     """
-    This is the algorithm class. 
+    This is the algorithm class.
 
     The characteristics of the algorithm are the following:
     - DivideEtImpera is a sort of heuristic framework based on conquer techniques of Giulio Cesare Roman Imperator.
@@ -279,13 +250,12 @@ class DivideEtImpera:
     """
 
     def __init__(self,
-                algorithm : Algorithm,
-                nodes : Sequence[Node], 
-                p : int,
-                max_split : int = 10,
-                base_node_id : int = 0,
-                goback : bool = True
-                ):
+                algorithm,
+                nodes, 
+                p = 30,
+                max_split = 10,
+                base_node_id = 1,
+                goback = True):
         """
         Initialize.
 
@@ -293,7 +263,7 @@ class DivideEtImpera:
         is not in the list of nodes provided, an Exception is raised.
 
         :param algorithm: The included algorithm to solve the subsets
-        :param nodes: The nodes of the problem
+        :param nodes: The nodes of the problem contained in a dict indexed with the nodes id
         :param p: The only parameter of the DEI; it is the number of nodes of a subset
                   considered acceptable to solve it with the included algorithm.
         :param max_split: The maximum number of times the DEI tries to split a set in 2 subset, if
@@ -310,20 +280,12 @@ class DivideEtImpera:
 
         """
 
-        found_base = False
-        base_node : Node
-
-        for node in nodes:
-            if node.id == base_node_id:
-                found_base = True
-                base_node = node
-                break
-
-
-        if found_base is False:
+        if (base:=nodes.get(base_node_id)):
+            self.base_node = base
+            
+        else:
             raise BaseNotFound(str(base_node_id) + ' is not in nodes list')
-
-
+            
 
 
         self.algorithm = algorithm
@@ -331,27 +293,25 @@ class DivideEtImpera:
         self.max_split = max_split
         self.goback = goback
 
-        self.base_node : Node = base_node
-        self.current_node : Node = base_node
+        self.current_node = self.base_node
         
-        self.distances : Dict[int, Dict[int, int]] = {i.id : {j.id : euclidean(i,j) for j in nodes} for i in nodes}
+        self.distances = {i : {j : euclidean(nodes[i],nodes[j]) for j in nodes} for i in nodes}
         
-        self.tour : List[Node] = list(nodes)
-        self.tour.remove(base_node)
+        self.tour = tuple(n for n in nodes.values() if n != base_node)
         
-        self.solution = Solution([], 0, 0)
+        self.solution = None
 
 
 
 
 
-    def _reset (self) -> None:
+    def _reset (self):
         """
         This <private> method reset the current solution of the algorithm.
         It should be used to build a new one.
 
         """
-        self.solution = Solution ([], 0, 0)
+        self.solution = None
         self.current_node = self.base_node
 
 
@@ -359,7 +319,7 @@ class DivideEtImpera:
 
 
 
-    def exe (self, tour : Optional[List[Node]] = None) -> Solution:
+    def exe (self, tour=None):
         """
         This method is the core of the algorithm.
 
@@ -376,11 +336,10 @@ class DivideEtImpera:
         times. If after max_split times, every partition node did not split the tour, the 
         tour is considered as not splittable, and it is solved by using the algorithm.
 
-        :param tour: <list> The list of nodes
+        :param tour: <tuple> The set of nodes
         :return: The solution
 
         """
-
         tour = tour or self.tour
 
         if len(tour) > self.p:
@@ -423,7 +382,7 @@ class DivideEtImpera:
 
 
 
-    def _solve_tour (self, tour : List[Node]) -> None:
+    def _solve_tour (self, tour):
         """
         This <private> method executes the algorithm on a subset of the nodes, and 
         updates the current solution.
@@ -443,32 +402,3 @@ class DivideEtImpera:
 
         if self.goback and len(self.solution.result) == len(self.tour):
             self.solution.value += self.distances[self.current_node.id][self.base_node.id]
-
-
-
-
-
-
-
-    def metaheuristic (self, maxiter=1000) -> Solution:
-        """
-        This method is a metaheuristic implementation of the DEI algorithm.
-
-        It simply repeats the DEI more and more times until the maximum number
-        of iterations is note elapsed.
-        
-        :param maxiter: The number of iterations that the algorithm is repeated.
-        :return: The best solution found.
-
-        """
-
-        best : Optional[Solution] = None
-
-        for i in range(maxiter):
-            self._reset()
-            sol = self.exe()
-
-            if not best or best.cost > sol.cost:
-                best = sol
-
-        return cast(Solution, best)
