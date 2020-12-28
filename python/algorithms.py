@@ -38,7 +38,7 @@ abstract class from which all these algorithms must inherit, the
 Solution class, and the Node class.
 
 """
-from dei import Algorithm, Solution, Node
+from dei import Algorithm, Solution, Node, cost
 
 
 
@@ -184,10 +184,7 @@ class TwoOpt (Algorithm):
     
     """
     
-    
-    
-    
-    def __init__ (self, iter : int, deep : bool = False) -> None:
+    def __init__ (self, iter, deep = False):
         """
         Initialize.
         
