@@ -1,4 +1,3 @@
-from __future__ import annotations
 """
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -26,13 +25,11 @@ Author contact: mattia.neroni@unipr.it
 """
 Libraries imported from Python 3 standard library.
 """
-from typing import Tuple, Sequence, List, Optional, Union, Dict, cast
-
 import random
 import copy
 import math
-import numpy # type: ignore
-import matplotlib.pyplot as plt # type: ignore
+import numpy
+import matplotlib.pyplot as plt
 
 
 """
@@ -50,11 +47,7 @@ from dei import Algorithm, Solution, Node
 
 
 
-def evaluate (tour : List[Node],
-              current_value : int,
-              current_node : Node,
-              distances : Dict[int,Dict[int,int]]
-             ) -> Solution:
+def evaluate (tour, current_value, current_node, distances):
     """
     This function can be used by all the algorithms implemented
     in this library to evaluate a solution, once the nodes to visit
@@ -63,13 +56,13 @@ def evaluate (tour : List[Node],
     returns a solution after calculating its value and delay.
     
     """
-    solution : Solution = Solution(tour, current_value, 0)
-    current : Node = current_node
+    value, delay = current_value, 0
+    current = current_node
     for node in tour:
-        solution.value = max(node.readytime, solution.value + distances[current.id][node.id])
-        solution.delay += max(0, solution.value - node.duedate) 
+        value = max(node.open, value + distances[current.id][node.id])
+        delay += max(0, value - node.close) 
         current = node
-    return solution
+    return Solution(tour, value, delay)
     
     
     
@@ -102,7 +95,7 @@ class Shuffler (Algorithm):
 
 
 
-    def exe (self, current_value : int, tour : List[Node], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
+    def exe (self, current_value, tour, current_node, distances):
         """
         This is the execution method of the algorithm.
 
@@ -550,142 +543,4 @@ class SimulatedAnnealing (Algorithm):
                     current_sol = new_sol
                     if current_sol.cost < best.cost:
                         best = current_sol
-        self.set_best_solution (best)
-
-        
-        
-        
-        
-        
-        
-        
-        
-        
-class DaSilva (Algorithm):
-    """
-    This is the implementation of a two-phase heuristic proposed by Da Silva and Urrutia (2010) in
-    
-    Da Silva, R.F., Urrutia, S. (2010) "A General VNS heuristic for the traveling salesman problem 
-    with time windows". Discrete Optimization. Vol. 7, pp. 203-211.
-    
-    """
-    
-    
-    
-    def __init__ (self, iter : int, maxlevel : int) -> None:
-        """
-        Initialize.
-        
-        :param iter: The maximum number of iterations of the algorithm.
-        :param maxlevel: The strength of the perturbation procedure during
-                         the feasible solutions' generation.
-        
-        """
-        super().__init__()
-        
-        self.iter = iter
-        self.maxlevel = maxlevel
-
-
-
-    @staticmethod
-    def evaluate (tour : List[Node], current_value : int, current_node : Node, distances : Dict[int,Dict[int,int]]) -> Tuple[Solution,Dict[str,List[Node]]]:
-        violation_report : Dict[str,List[Node]] = {"violated":[], "notviolated":[]}
-        solution : Solution = Solution(tour, current_value, 0)
-        current : Node = current_node
-        for node in tour:
-            solution.value = max(node.readytime, solution.value + distances[current.id][node.id])
-            solution.delay += max(0, solution.value - node.duedate)
-
-            if solution.value - node.duedate > 0:
-                violation_report["violated"].append(node)
-            else:
-                violation_report["notviolated"].append(node)
-
-            current = node
-        return solution, violation_report
-    
-    
-    
-    
-    @staticmethod
-    def _perturbation (tour : List[Node], level : int) -> List[Node]:
-        tour = list(tour)
-        for _ in range(level):
-            i = random.randint(0, len(tour) - 1)
-            extracted = tour.pop (i)
-            j = min(max(random.choice([i-1, i+1]), 0), len(tour)-1)
-            tour.insert (j, extracted)
-
-        return tour
-    
-
-
-    @staticmethod
-    def _one_shift (tour : List[Node], violated_report : Dict[str,List[Node]]) -> List[Node]:
-        tour = list(tour)
-        if len(violated_report.get("violated")) > 0:
-            moved = random.choice(violated_report["violated"])
-            i = tour.index(moved)
-            tour.pop(i)
-            tour.insert (i - 1, moved)
-        return tour
-
-
-        
-    
-    
-    def _feasible_solution (self,
-                           current_value : int,
-                           tour : List[Node],
-                           current_node : Node,
-                           distances : Dict[int,Dict[int,int]]) -> Solution:
-        """
-        This method generates an always feasible solution.
-        
-        """
-        level = 1
-        random.shuffle (tour)
-        current_sol, violated = self.evaluate (tour, current_value, current_node, distances)
-        new_tour : List[Node]
-        new_sol : Solution
-        new_violated : Dict[str, List[Node]]
-        
-        while level < self.maxlevel and current_sol.delay > 0:
-
-            new_tour = self._perturbation (tour, 1) #(tour, level)
-            _, new_violated = self.evaluate (new_tour, current_value, current_node, distances)
-            new_tour = self._one_shift (new_tour, new_violated)
-            new_sol, new_violated = self.evaluate (new_tour, current_value, current_node, distances)
-            
-            if current_sol.delay < new_sol.delay:
-                level += 1
-            else:
-                level = 1
-                tour, current_sol, violated = new_tour, new_sol, new_violated
-
-        return current_sol
-    
-    
-    
-    
-
-    
-    
-    
-    def exe (self, current_value : int, tour : List[Node], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
-        """
-        This is the execution method.
-        
-        """
-        best : Solution = evaluate (tour, current_value, current_node, distances)
-        newsol : Solution
-        
-        for _ in range (self.iter):
-            newsol = self._feasible_solution (current_value, tour, current_node, distances)
-            #newsol = self._GVNS (newsol)
-            
-            if best.cost > newsol.cost:
-                best = newsol
-        
         self.set_best_solution (best)
