@@ -344,35 +344,30 @@ class DivideEtImpera:
         tour = tour or self.tour
 
         if len(tour) > self.p:
+            
+            split, max_split = 0, self.max_split
+            first_part = tuple()
+            second_part = tuple()
 
-            split : int = 0
-            first_part : List[Node] = []
-            second_part : List[Node] = []
 
-
-            while (not first_part or not second_part) and split < self.max_split:
-
+            while (not first_part or not second_part) and split < max_split:
+                
                 partition_node = random.choice(tour)
-
                 split += 1
 
-                first_part = [node for node in tour if node.duedate < partition_node.readytime]
-                second_part = [node for node in tour if node.duedate >= partition_node.readytime]
+                first_part = tuple(node for node in tour if node.close < partition_node.open)
+                second_part = tuple(node for node in tour if node.close >= partition_node.open)
 
 
 
-            if len(first_part) is 0 or len(second_part) is 0:
+            if len(first_part) == 0 or len(second_part) == 0:
                 self._solve_tour (tour)
-
             else:
                 self.exe (first_part)
                 self.exe (second_part)
 
-
         else:
             self._solve_tour (tour)
-
-
 
         self.solution = Solution(self.result, self.value, self.cost)
         return self.solution
