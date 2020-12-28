@@ -204,14 +204,14 @@ class TwoOpt (Algorithm):
         
         
         
-    def exe (self, current_value : int, tour : List[Node], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
+    def exe (self, current_value, tour, current_node, distances):
         """
         This method is the execution of the algorithm. Please refer to the 
         beginning of the class for a more accurate description of the 
         procedure.
         
         """
-        best : Solution = evaluate (tour, current_value, current_node, distances)
+        best = evaluate (tour, current_value, current_node, distances)
             
         for _ in range(self.iter):
             i = 0
@@ -266,7 +266,7 @@ class Greedy (Algorithm):
     
     """
     
-    def __init__ (self, alpha : float = 0.999, beta : float = 1.0):
+    def __init__ (self, alpha = 0.999, beta = 1.0):
         """
         Initialize.
         
