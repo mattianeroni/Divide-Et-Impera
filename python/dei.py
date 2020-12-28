@@ -300,6 +300,7 @@ class DivideEtImpera:
         self.tour = tuple(n for n in nodes.values() if n != base_node)
         
         self.solution = None
+        self.result, self.value, self.cost = [], 0, 0
 
 
 
@@ -373,7 +374,7 @@ class DivideEtImpera:
 
 
 
-
+        self.solution = Solution(self.result, self.value, self.cost)
         return self.solution
 
 
@@ -392,7 +393,7 @@ class DivideEtImpera:
         """
 
         self.algorithm.exe(self.solution.value, tour, self.current_node, self.distances)
-        sol : Solution = self.algorithm.get_best_solution
+        sol = self.algorithm.get_best_solution
 
         self.solution.result.extend(sol.result)
         self.solution.value = sol.value
