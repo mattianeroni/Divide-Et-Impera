@@ -2,11 +2,11 @@ import dei
 
 def read_benchmark (filename, path="./benchmarks/", delimiter=" "):
 	nodes = []
-    with open(path + filename) as file:
-    	for i, row in enumerate(file):
-    		if i > 0:
-    			string = " ".join(row.split()).split(" ")
-    			nodes.append(dei.Node(
+	with open(path + filename) as file:
+		for i, row in enumerate(file):
+			if i > 0:
+				string = " ".join(row.split()).split(" ")
+				nodes.append(dei.Node(
     							int(string[0]),
     							int(float(string[1])), 
     							int(float(string[2])), 
@@ -14,7 +14,7 @@ def read_benchmark (filename, path="./benchmarks/", delimiter=" "):
     							int(float(string[5]))
     							)
     						)
-    return nodes
+	return nodes
 
 
 
