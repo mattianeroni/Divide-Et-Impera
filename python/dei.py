@@ -183,6 +183,26 @@ class Algorithm (ABC):
 
 
 
+    @staticmethod
+    def evaluate (tour, current_value, current_node, distances):
+        """
+        This function can be used by all the algorithms implemented
+        in this library to evaluate a solution, once the nodes to visit
+        have been set in the desired order.
+        Given the tour, the current value, and the current node, the function 
+        returns a solution after calculating its value and delay.
+        
+        """
+        value, delay = current_value, 0
+        current = current_node
+        for node in tour:
+            value = max(node.open, value + distances[current.id][node.id])
+            delay += max(0, value - node.close) 
+            current = node
+        return Solution(tour, value, delay)
+
+
+
 
     @property
     def get_best_result (self):
@@ -314,6 +334,7 @@ class DivideEtImpera:
         """
         self.solution = None
         self.current_node = self.base_node
+        self.result, self.value, self.cost = [], 0, 0
 
 
 

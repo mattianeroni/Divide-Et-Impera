@@ -41,29 +41,7 @@ Solution class, and the Node class.
 from dei import Algorithm, Solution, Node, cost
 
 
-
-
-
-
-
-
-def evaluate (tour, current_value, current_node, distances):
-    """
-    This function can be used by all the algorithms implemented
-    in this library to evaluate a solution, once the nodes to visit
-    have been set in the desired order.
-    Given the tour, the current value, and the current node, the function 
-    returns a solution after calculating its value and delay.
-    
-    """
-    value, delay = current_value, 0
-    current = current_node
-    for node in tour:
-        value = max(node.open, value + distances[current.id][node.id])
-        delay += max(0, value - node.close) 
-        current = node
-    return Solution(tour, value, delay)
-    
+ 
     
     
     
@@ -101,7 +79,7 @@ class Shuffler (Algorithm):
         """
 
         random.shuffle (list(tour))
-        self.set_best_solution (evaluate (tuple(tour), current_value, current_node, distances))
+        self.set_best_solution (self.evaluate (tuple(tour), current_value, current_node, distances))
 
 
 
@@ -149,12 +127,11 @@ class RandomSearch (Algorithm):
         """
         s = Shuffler()
         best = evaluate (tour, current_value, current_node, distances)
-        i = 0
-
-        while i < self.iter:
+        
+        for i in range(self.iter):
             s.exe (current_value, tour, current_node, distances)
             solution = s.get_best_solution
-            i += 1
+
             if cost(solution) < cost(best):
                 best = solution
                 
@@ -202,8 +179,7 @@ class TwoOpt (Algorithm):
         procedure.
         
         """
-        current_path = list(tour)
-        random.shuffle(current_path)
+        current_path = random.sample(tour)
         best = evaluate (tuple(current_path), current_value, current_node, distances)
         i = 0
         while i < len(tour) - 2:
