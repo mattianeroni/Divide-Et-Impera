@@ -4,9 +4,11 @@
 #include "node.h"
 #include <vector>
 #include <array>
+#include <cmath>
 
 using std::vector;
 using std::array;
+using std::pair;
 
 // Template the number of nodes
 template <std::size_t N>
@@ -22,27 +24,37 @@ class Algorithm {
      */
 
 protected:
-    long cost;              // The cost of the best solution found
+    long value, delay;      // The travel time relative to the best solution found and
+                            // the cumulated delay
     vector<Node> best;      // The best solution found so far
 
     // Set the best solution and its cost
-    virtual void set_best (vector<Node>, long cost);
+    void set_best (vector<Node>, pair<long,long> cost);
     
     // Get the cost of a solution
-    virtual long costify (vector<Node>, array<array<Node,N>,N>);
+    pair<long,long> costify (const Node&, long, vector<Node>, array<array<Node,N>,N>);
+
+    // The execution abstract method
+    virtual void exe (const Node&, long, vector<Node>, array<array<Node,N>,N>);
+
 };
 
 
-void Algorithm<N>::set_best (vector<Node> sol, long cost) {// array<array<long,N>,N> dists) {
-    (*this).best = sol; (*this).cost = cost;
+template<std::size_t N>
+void Algorithm<N>::set_best (vector<Node> sol, pair<long,long> cost) {
+    (*this).best = sol; (*this).value = cost.first; (*this).delay = cost.second;
 }
 
+
 template<std::size_t N>
-long Algorithm<N>::costify (vector<Node> sol, array<array<long,N>,N> dists) {
-    long cost = 0;
-    for (int i = 0; i < sol.size() - 1; ++i)
-        cost += dists[sol[i]][sol[i+1]];
-    return cost;
+pair<long,long> Algorithm<N>::costify(const Node& cnode, long cval, vector<Node> sol, array<array<Node, N>, N> dists) {
+    Node current = cnode; long val = cval, del = 0;
+    for (auto n : sol){
+        val = std::max (n.open, val + dists[current.id][n.id]);
+        del += std::max((long) 0, val - n.close);
+        current = n;
+    }
+    return pair<long,long> (val, del);
 }
 
 #endif //EIG_ALGORITHM_H

@@ -17,7 +17,7 @@ struct Node {
     int id, x, y, open, close;            // Id, x-position, y-position, opening time, closing time
 
     Node (int,int,int,int,int);           // Constructor
-    ~Node() = default;                              // Destructor
+    ~Node() = default;                    // Destructor
 
     int operator-(const Node&) const;     // Distance between two nodes is calculated with this operator
 
