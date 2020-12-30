@@ -77,7 +77,6 @@ class Shuffler (Algorithm):
         This is the execution method of the algorithm.
 
         """
-
         random.shuffle (list(tour))
         self.set_best_solution (self.evaluate (tuple(tour), current_value, current_node, distances))
 
@@ -126,7 +125,7 @@ class RandomSearch (Algorithm):
 
         """
         s = Shuffler()
-        best = evaluate (tour, current_value, current_node, distances)
+        best = self.evaluate (tuple(random.sample(tour, len(tour))), current_value, current_node, distances)
         
         for i in range(self.iter):
             s.exe (current_value, tour, current_node, distances)
@@ -179,17 +178,17 @@ class TwoOpt (Algorithm):
         procedure.
         
         """
-        current_path = random.sample(tour)
-        best = evaluate (tuple(current_path), current_value, current_node, distances)
+        current_path = random.sample(tour, len(tour))
+        best = self.evaluate (tuple(current_path), current_value, current_node, distances)
         i = 0
         while i < len(tour) - 2:
             j = i + 2
             while j < len(tour):
-                new_sol = evaluate(tuple(current_path[:i] + list(reversed(current_path[i:j])) + current_path[j:]), current_value, current_node, distances)
+                new_sol = self.evaluate(tuple(current_path[:i] + list(reversed(current_path[i:j])) + current_path[j:]), current_value, current_node, distances)
                 if cost(new_sol) < cost(best):
                     best = new_sol
                     i, j = 0, 2
-            
+
         self.set_best_solution (best)
         
         
@@ -212,7 +211,7 @@ class Greedy (Algorithm):
     solution in construction yet, are sorted from the best to the worst.
     Then, to each node is assigned a probability to be selected according to its
     position in the list using a quasi-geometric function:
-            
+    
                         f(x) = (1 - alpha)^x
     
     At each step, the selectable nodes are classified defining which is the best
@@ -250,38 +249,38 @@ class Greedy (Algorithm):
         
     
     @staticmethod
-    def _costof (node : Node, current_node : Node, current_value : int, distances : Dict[int,Dict[int,int]]) -> int:
+    def _costof (node, current_node, current_value, distances):
         """
         This is the cost method used to evaluate the nodes and define their probability
         to be selected. Obviously, only nodes not included yet in the current solution
         must be considered.
         
         """
-        distance : int = distances[current_node.id][node.id]
-        return max(node.readytime, current_value + distance) + max(0, current_value + distance - node.duedate)
+        distance = distances[current_node.id][node.id]
+        return max(node.open, current_value + distance) - max(0, current_value + distance - node.close)
     
     
     
     
     @staticmethod
-    def _bra (length : int, alpha : float) -> int:
+    def _bra (lst, alpha):
         """
         This method implements the biased randomisation by returning an 
         element form a list, according to a quasi-geometric function.
                                 f(x) = (1 - alpha)^x
         
-        :param length: the length of the list of options
+        :param lst: the list of options
         :param alpha: the parameter of the quasi-geometric
         :return: the position in the list of the selected element
         
         """
-        return int(math.log (random.random(), 1 - alpha)) % length
+        return lst[int(math.log (random.random(), 1 - alpha)) % len(lst)]
     
     
         
         
         
-    def exe (self, current_value : int, tour : List[Node], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
+    def exe (self, current_value, tour, current_node, distances):
         """
         This is the execution method.
         
@@ -293,21 +292,27 @@ class Greedy (Algorithm):
         According to the parameter beta the tour can also be modified just in part, but always starting from the bottom.
         
         """
-        current_tour : List[Node] = tour[:int(len(tour)*(1.0 - self.beta))]
-        solution : Solution = Solution ([], current_value, 0) if not current_tour else evaluate(current_tour, current_value, current_node, distances)
-        current = current_node if not current_tour else solution.result[-1]
-        selectables : List[Node] = [i for i in tour if not i in current_tour]
+        current_tour = tour[:int(len(tour)*(1.0 - self.beta))]
+        solution, value, delay = [], current_value, 0 
+        if len(current_tour) > 0:
+            s = self.evaluate(current_tour, current_value, current_node, distances)
+            solution, value, delay = s.result, s.value, s.delay
+            solution = list(solution)
+
+        current = current_node if not current_tour else solution[-1]
+        selectables = [i for i in tour if not i in current_tour]
         
         while len(selectables) > 0:
-            options = sorted(selectables, key=lambda n : self._costof (n, current, solution.value, distances))
-            next_node : Node = options[self._bra(len(options), self.alpha)]
+            options = sorted(selectables, key=lambda n : self._costof (n, current, value, distances))
+            next_node = self._bra(options, self.alpha)
+
             selectables.remove (next_node)
-            solution.result.append (next_node)
-            solution.value += distances[current.id][next_node.id] + max(0, next_node.readytime - solution.value - distances[current.id][next_node.id])
-            solution.delay += max(0, solution.value - next_node.duedate)
+            solution.append (next_node)
+            value += distances[current.id][next_node.id] + max(0, next_node.open - value - distances[current.id][next_node.id])
+            delay += max(0, value - next_node.close)
             current = next_node
         
-        self.set_best_solution (solution)
+        self.set_best_solution (Solution(solution, value, delay))
         
         
         
@@ -349,7 +354,7 @@ class BiasedRandomised (Algorithm):
     
     
     
-    def __init__ (self, alpha : float = 0.9, starting_beta : float = 0.1, delta_beta : float = 0.1, iter : int = 1000):
+    def __init__ (self, alpha=0.9, starting_beta=0.1, delta_beta=0.1, iter=1000):
         """
         Initialize.
         
@@ -368,7 +373,7 @@ class BiasedRandomised (Algorithm):
         
         
     
-    def exe (self, current_value : int, tour : List[Node], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
+    def exe (self, current_value, tour, current_node, distances):
         """
         This is the execution method.
         
@@ -377,14 +382,15 @@ class BiasedRandomised (Algorithm):
         At the end of the process, only the best solution found so far is kept.
         
         """
-        builder : Greedy = Greedy(self.alpha, self.starting_beta)
-        best : Solution = evaluate (tour, current_value, current_node, distances)
+        tour = tuple(random.sample(tour, len(tour)))
+        builder = Greedy(self.alpha, self.starting_beta)
+        best = self.evaluate (tour, current_value, current_node, distances)
 
         for i in range (self.iter):
             builder.exe (current_value, tour, current_node, distances)
-            new_sol : Solution = builder.get_best_solution
+            new_sol = builder.get_best_solution
             
-            if new_sol.cost < best.cost:
+            if cost(new_sol) < cost(best):
                 best = new_sol
                 builder.beta = self.starting_beta
             else:
@@ -396,42 +402,20 @@ class BiasedRandomised (Algorithm):
         
         
         
-
+"""
 class SimulatedAnnealing (Algorithm):
-    """
-    This algorithm is the implementation of a Simulated Annealing.
     
-    At the beginning of each era a random solution is generated.
-    Then, for each iteration a new solution is generated and eventually
-    made the new best. After generating a new solution the temperature
-    is linearly decreased and the process is repeated.
-    
-    For generating a new solution two methods are used (i.e. swap and 2-opt).
-    At each iteration the selection of the method is made according to their 
-    probabilities.
-    
-    """
     
     
     def __init__ (self,
-                  era : int = 1000,
-                  max_temperature : float = 1.0,
-                  min_temperature : float = 0.0,
-                  step : float = 0.05,
-                  neighbour_prob : Tuple[float, float] = (0.5,0.5),
-                  greedy_start : bool = False
+                  era = 1000,
+                  max_temperature = 1.0,
+                  min_temperature = 0.0,
+                  step = 0.05,
+                  neighbour_prob = (0.5,0.5),
+                  greedy_start = False
                  ) -> None:
-        """
-        Initialize.
         
-        :param era: The number of eras.
-        :param max_temperature: The max temperature at the beginning of each era (must be between 1 and 0).
-        :param min_temperature: The min reachable temperature (must be between 1 and 0).
-        :param step: The decrease of temperature at each iteration.
-        :param neighbour_prob: The probability to use each of the neighbour seach methods (respectively swap and 2-opt)
-        :param greedy_start: If true the algorithm starts from a already good greedy solution.
-        
-        """
         super().__init__()
         
         self.era = era
@@ -448,17 +432,7 @@ class SimulatedAnnealing (Algorithm):
     
         
     def _neighbour_search (self, tour : List[Node]) -> List[Node]:
-        """
-        This is the neighbour search method.
-        Two different neighbour searches are implemented and at each iteration
-        the selection is of the neighbour search method is random. The first
-        method is a simple swap of two randomly selected nodes, the second one
-        is the well-known 2-opt algorithm.
         
-        :param tour: the current tour of nodes
-        :return: a new tour of nodes
-        
-        """
         rnd = random.random()
         if rnd < self.neighbour_method_prob[0]:
             i, j = random.randint(0, len(tour)-1), random.randint(0, len(tour)-1)
@@ -475,14 +449,7 @@ class SimulatedAnnealing (Algorithm):
     
     
     def exe (self, current_value : int, tour : List[Node], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
-        """
-        This is the execution method.
-        For each era a new random solution is generated. Then, for each iteration
-        a new solution is generated via neighbour search. If the new solution is better
-        than the best one, or if it is worst but the probability acceptance allows it,
-        it is made the new best.
         
-        """
         g = Greedy()
         g.exe (current_value, tour, current_node, distances)
         
@@ -501,3 +468,4 @@ class SimulatedAnnealing (Algorithm):
                     if current_sol.cost < best.cost:
                         best = current_sol
         self.set_best_solution (best)
+"""

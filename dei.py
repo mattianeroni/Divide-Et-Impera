@@ -317,10 +317,10 @@ class DivideEtImpera:
         
         self.distances = {i : {j : euclidean(nodes[i],nodes[j]) for j in nodes} for i in nodes}
         
-        self.tour = tuple(n for n in nodes.values() if n != base_node)
+        self.tour = tuple(n for n in nodes.values() if n != self.base_node)
         
         self.solution = None
-        self.result, self.value, self.cost = [], 0, 0
+        self.result, self.value, self.delay = [], 0, 0
 
 
 
@@ -362,7 +362,8 @@ class DivideEtImpera:
         :return: The solution
 
         """
-        tour = tour or self.tour
+        t = tour or self.tour
+        tour = tuple(random.sample(t, len(t)))
 
         if len(tour) > self.p:
             
@@ -390,7 +391,7 @@ class DivideEtImpera:
         else:
             self._solve_tour (tour)
 
-        self.solution = Solution(self.result, self.value, self.cost)
+        self.solution = Solution(self.result, self.value, self.delay)
         return self.solution
 
 
@@ -408,14 +409,14 @@ class DivideEtImpera:
 
         """
 
-        self.algorithm.exe(self.solution.value, tour, self.current_node, self.distances)
+        self.algorithm.exe(self.value, tour, self.current_node, self.distances)
         sol = self.algorithm.get_best_solution
 
-        self.solution.result.extend(sol.result)
-        self.solution.value = sol.value
-        self.solution.delay += sol.delay
+        self.result.extend(sol.result)
+        self.value = sol.value
+        self.delay += sol.delay
 
         self.current_node = sol.result[-1]
 
-        if self.goback and len(self.solution.result) == len(self.tour):
-            self.solution.value += self.distances[self.current_node.id][self.base_node.id]
+        if self.goback and len(self.result) == len(self.tour):
+            self.value += self.distances[self.current_node.id][self.base_node.id]
