@@ -185,9 +185,11 @@ class TwoOpt (Algorithm):
             j = i + 2
             while j < len(tour):
                 new_sol = self.evaluate(tuple(current_path[:i] + list(reversed(current_path[i:j])) + current_path[j:]), current_value, current_node, distances)
+                j += 1
                 if cost(new_sol) < cost(best):
                     best = new_sol
                     i, j = 0, 2
+            i += 1
 
         self.set_best_solution (best)
         
