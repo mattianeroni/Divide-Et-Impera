@@ -1,72 +1,76 @@
-#ifndef DEI_DEI_H
-#define DEI_DEI_H
+#ifndef UNTITLED_DEI_H
+#define UNTITLED_DEI_H
 
-#include <array>
-#include <vector>
-
-#include "node.h"
-#include "algorithm.h"
 
 #define self (*this)
 
+#include <vector>
+#include <array>
+#include "node.h"
+#include "algorithm.h"
+
+template<typename T>
+
+using vec = std::vector<T>;
 using std::array;
-using std::vector;
+
+
 
 
 // Template the number of nodes
-template<std::size_t N>
+template <std::size_t N>
 
 
 
-struct DivideEtImpera {
 
-    array<array<long,N>,N> dists;                           // The distance matrix
-    vector<Node> solution;                                  // The current solution
-    Node& cnode;                                            // The current node
-    long value, delay;                                      // The travel time and the cumulative delay of the
-                                                            // current solution.
-    Algorithm<N>* alg;                                      // The implemented algorithm
-    int p, maxsplit;                                        // Parameters of the algorithm
+class DEI{
 
-    DivideEtImpera(Algorithm<N>*, array<array<long,N>,N>, const Node&, int=50, int=3000);  // Constructor
-    ~DivideEtImpera() = default;                            // Destructor
+private:
 
-    void operator()(vector<Node>);                          // The eecution of the algorithm
+    Algorithm<N>*              alg;
 
-    void solve(vector<Node>);                               // Solve a subtour using the implemented algorithm
+    array<array<long,N>,N>  dists;
+    Node*                   cnode;
+    vec<Node>               solution;
+    long                    value, delay;
+    int                     p, maxsplit;
+
+    void solve(vec<Node>);
+
+public:
+
+    DEI(Algorithm<N>*, array<array<long,N>,N>, Node*, int = 50, int = 3000);
+    ~DEI() = default;
+    void operator()(vec<Node>);
+
 };
 
 
-template<std::size_t N>
-DivideEtImpera<N>::DivideEtImpera(Algorithm<N>* alg, array<array<long,N>,N> dists, const Node& cnode, int p, int maxsplit)
-: alg(alg), dists(dists), value(0), delay(0), p(p), maxsplit(maxsplit), cnode(cnode) {}
+// Constructor
+template <std::size_t N>
+DEI<N>::DEI(Algorithm<N>* alg, array<array<long,N>,N> dists, Node* cnode, int p, int maxsplit) : alg(alg),
+                    dists(dists), cnode(cnode), value(0), delay(0), p(p), maxsplit(maxsplit){}
 
 
-template<std::size_t N>
-void DivideEtImpera<N>::operator()(vector<Node> tour){
-    tour.erase(std::find(tour.begin(), tour.end(), cnode));
-    if (tour.size() > p) {
-        vector<Node> f, s;
-        int split = 0;
-
-
+template <std::size_t N>
+void DEI<N>::operator()(vec<Node> tour){
+    if (tour.size() > p){
+        vec<Node> f, s; int split = 0;
         while ((f.size() == 0 || s.size() == 0) && split++ < maxsplit){
-            auto pivot = tour[(int) ((float) rand() / RAND_MAX * tour.size())];
-            for (Node n : tour){
+            auto pivot = tour[rand() % tour.size()];
+            for (auto n : tour)
                 if (n.close < pivot.open){
                     f.push_back(n);
-                } else{
+                } else {
                     s.push_back(n);
                 }
-            }
         }
 
-        if (f.size() > 0 && s.size() > 0){
-            (*this)(f); (*this)(s);
-        }else{
+        if (f.size() == 0 || s.size() == 0){
             solve(tour);
+        } else {
+            self(f); self(s);
         }
-
 
     } else {
         solve(tour);
@@ -74,32 +78,14 @@ void DivideEtImpera<N>::operator()(vector<Node> tour){
 }
 
 
-template<std::size_t N>
-void DivideEtImpera<N>::solve(vector<Node> tour){
-    alg->exe(cnode, value, tour, dists);
-    self.solution.insert(self.solution.end(),alg->best.begin(),alg->best.end());
-    self.value = alg->value; self.delay += alg->delay;
+
+template <std::size_t N>
+void DEI<N>::solve (vec<Node> sol){
+    // Solve the subsolution with the implemented algorithm
+    alg->exe(*cnode, value, sol, dists);
+
+    // Update the solution, its travel time and its delay
+    solution.insert(solution.end(), alg->best.begin(), alg->best.end());
+    value = alg->value; delay += alg->delay;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#endif //DEI_DEI_H
+#endif //UNTITLED_DEI_H

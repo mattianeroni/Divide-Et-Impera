@@ -51,10 +51,7 @@ namespace utils {
         while (getline(file, row)){
             if (i > 0){
                 tokens = tokenize(row);
-                // !!! IMPORTANT
-                // In the benchmarks the nodes are indexed to 1.
-                // Here we reduce the the Id of each node making it 0-indexed.
-                v.push_back(Node(stoi(tokens[0]) - 1,
+                v.push_back(Node(stoi(tokens[0]),
                                      (int) stof(tokens[1]),
                                      (int) stof(tokens[2]),
                                      (int) stof(tokens[4]),
