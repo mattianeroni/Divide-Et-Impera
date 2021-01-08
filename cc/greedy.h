@@ -10,38 +10,38 @@
 #include "node.h"
 
 
+using std::vector;
 using std::log;
 using std::max;
 
 
-template<std::size_t N>
 
-class Greedy : protected Algorithm<N>{
 
-private:
+class Greedy : public Algorithm{
+
+public:
 
     float alpha, beta;
 
-    Greedy(float, float);
-    ~Greedy() = default;
+    int bra (int) const ;
+    void exe (const Node&, long, vector<Node>, vector<vector<int>>) override;
 
-    void exe (const Node&, long, vector<Node>, array<array<Node,N>,N>);
-    int bra (int);
+    explicit Greedy(float=0.9999, float=1.0);
+    ~Greedy() = default;
 
 };
 
 
-template<std::size_t N>
-Greedy<N>::Greedy(float alpha, float beta) : alpha(alpha), beta(beta){}
+Greedy::Greedy(float alpha, float beta) : alpha(alpha), beta(beta){}
 
-template<std::size_t N>
-int Greedy<N>::bra (int length){
+
+int Greedy::bra (int length) const {
     return (int) (log( rand() / (float) RAND_MAX ) / log(1 - alpha)) % length;
 }
 
-template<std::size_t N>
-void Greedy<N>::exe(const Node& cnode, long cval, vector<Node> tour, array<array<Node,N>,N> dists){
-    int stay_equal = (int) beta * tour.size();
+
+void Greedy::exe(const Node& cnode, long cval, vector<Node> tour, vector<vector<int>> dists){
+    int stay_equal = (int) (beta * tour.size());
     vector<Node> sol(tour.begin(), tour.begin() + stay_equal);
     vector<Node> options(tour.begin() + stay_equal, tour.end());
 
@@ -49,8 +49,8 @@ void Greedy<N>::exe(const Node& cnode, long cval, vector<Node> tour, array<array
         std::sort(options.begin(), options.end(),
                   [cnode, cval, dists](const Node& n, const Node& m) -> bool
                   {
-                    return max(dists[cnode.id][n.id] + cval, n.open) - max(0, dists[cnode.id][n.id] + cval - n.close)
-                    < max(dists[cnode.id][m.id] + cval, m.open) - max(0, dists[cnode.id][m.id] + cval - m.close);
+                    return max(dists[cnode.id][n.id] + cval, (long)n.open) - max((long)0, dists[cnode.id][n.id] + cval - n.close)
+                    < max(dists[cnode.id][m.id] + cval, (long) m.open) - max((long)0, dists[cnode.id][m.id] + cval - m.close);
                   }
         );
         int id = bra(options.size());

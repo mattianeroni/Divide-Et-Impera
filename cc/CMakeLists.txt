@@ -3,4 +3,4 @@ project(untitled)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(untitled main.cpp utils.h node.h algorithm.h dei.h)
+add_executable(untitled main.cpp)
