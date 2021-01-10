@@ -29,6 +29,7 @@ import random
 import copy
 import math
 import numpy
+import itertools
 import matplotlib.pyplot as plt
 
 
@@ -404,70 +405,105 @@ class BiasedRandomised (Algorithm):
         
         
         
-"""
-class SimulatedAnnealing (Algorithm):
-    
-    
-    
-    def __init__ (self,
+
+class HybridTabuAnnealing (Algorithm):
+    """
+    An instance of this class represents the algorithm published by Ilker Küçüko, 
+    Reginald Dewil and Dirk Cattrysse, entitled 'Hybrid simulated annealing and tabu 
+    search method for the electric travelling salesman problem with time windows and
+    mixed charging rates'.
+
+    """
+    def __init__ (self, 
                   era = 1000,
-                  max_temperature = 1.0,
-                  min_temperature = 0.0,
-                  step = 0.05,
-                  neighbour_prob = (0.5,0.5),
-                  greedy_start = False
-                 ) -> None:
-        
-        super().__init__()
-        
+                  cooling = 0.9,
+                  perturbation = 0.1,
+                  perturbed = 0.1,
+                  tabusize = 10):
+        """
+        Initialize.
+
+        :param era: The number of iterations.
+        :param cooling: The cooling of temperature at each iteration.
+        :param perturbation: The perturbation probability.
+        :param perturbed: The number of nodes perturber at each perturbation.
+        :param tabusize: The size of the tabu list.
+
+        """
         self.era = era
-        self.max_t = max_temperature
-        self.min_t = min_temperature
-        self.step = step
-        
-        self.neighbour_method_prob = neighbour_prob if neighbour_prob[0] + neighbour_prob[1] == 1.0 else (neighbour_prob[0], 1 - neighbour_prob[0])
-        self.greedy_start = greedy_start
-        
-        
-    
-    
-    
-        
-    def _neighbour_search (self, tour : List[Node]) -> List[Node]:
-        
-        rnd = random.random()
-        if rnd < self.neighbour_method_prob[0]:
-            i, j = random.randint(0, len(tour)-1), random.randint(0, len(tour)-1)
-            tour[i], tour[j] = tour[j], tour[i]
-            return tour
-        else:
-            i, j = random.randint(0, len(tour)-1), random.randint(0, len(tour)-1)
-            i, j = min(i,j), max(i,j)
-            return tour[:i] + list(reversed(tour[i:j])) + tour[j:]
-        
-    
-    
-    
-    
-    
-    def exe (self, current_value : int, tour : List[Node], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
-        
-        g = Greedy()
-        g.exe (current_value, tour, current_node, distances)
-        
-        current_tour : List[Node] = tour
-        current_sol : Solution = evaluate (tour, current_value, current_node, distances) if self.greedy_start is False else g.get_best_solution
-        best : Solution = evaluate (tour, current_value, current_node, distances) if self.greedy_start is False else g.get_best_solution
-        for era in range(self.era):
-            random.shuffle (current_tour)
-            current : Solution = evaluate (current_tour, current_value, current_node, distances)
-            for i in numpy.arange (self.max_t, self.min_t, -self.step):
-                current_tour = self._neighbour_search(current_tour)
-                new_sol : Solution = evaluate (current_tour, current_value, current_node, distances)
-                rnd_acceptance : float = random.random()
-                if new_sol.cost < current_sol.cost or (new_sol.cost >= current_sol.cost and rnd_acceptance < i):
-                    current_sol = new_sol
-                    if current_sol.cost < best.cost:
-                        best = current_sol
-        self.set_best_solution (best)
-"""
+        self.cooling = cooling
+        self.perturbation = perturbation
+        self.perturbed = perturbed
+        self.tabusize = tabusize
+
+        self.t = 10
+        self.tabu = set()
+
+
+
+    def shiftleft(self, tour):
+        pass
+
+    def shiftright (self, tour):
+        pass
+
+    def opt (self, tour):
+        pass
+
+    def swap (self, tour):
+        pass
+
+
+
+
+    def localsearch (self, tour, current_value, current_node, distances):
+        """
+        Generation of another solution in the neighbourhood.
+
+        """
+        func = random.choice((self.shiftleft, self.shiftright, self.opt, self.swap))
+        tour = func(tour)
+
+        # Eventual perturbation
+        if (r := random.random()) < self.perturbation:
+            for _ in range(int(len(tour) * self.perturbed)):
+                removed_node = tour.pop(random.randint(0, len(tour) - 1))
+                tour.insert(random.randint(0, len(tour) - 1), removed_node)
+
+        return self.evaluate(tuple(tour), current_value, current_node, distances)
+
+
+
+
+
+
+
+
+    def exe (self, current_value, tour, current_node, distances):
+
+        # Preprocessing
+        dists = copy.deepcopy(distances)
+        for n1, n2 in itertools.product(tour, tour, repeat=1):
+            if n1 is not n2:
+                if n1.open + distances[n1.id][n2.id] > n2.close:
+                    dists[n1.id][n2.id] = -1
+
+        # Sort nodes by ascending closing time
+        tour.sort(key=lambda i: i.close)
+
+        # Starting solution
+        x = self.evaluate(tuple(tour), current_value, current_node, distances)
+
+        for _ in range (self.era):
+            # New solution in the neighbourhood
+            x_new = self.localsearch (tour, current_value, current_node, distances)
+
+            # Eventually update the best
+            r = random.random()
+            if (i := cost(x_new)) < (j := cost(x)) or r > math.exp(- (i-j) / self.t):
+                x = x_new
+
+            # Update the temperature
+            self.t *= 0.9
+
+        self.set_best_solution(x)
