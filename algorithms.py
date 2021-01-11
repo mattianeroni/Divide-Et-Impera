@@ -30,6 +30,7 @@ import copy
 import math
 import numpy
 import itertools
+import collections
 import matplotlib.pyplot as plt
 
 
@@ -357,7 +358,7 @@ class BiasedRandomised (Algorithm):
     
     
     
-    def __init__ (self, alpha=0.9, starting_beta=0.1, delta_beta=0.1, iter=1000):
+    def __init__ (self, alpha=0.9, starting_beta=0.1, delta_beta=0.1, iter=3000):
         """
         Initialize.
         
@@ -416,10 +417,10 @@ class HybridTabuAnnealing (Algorithm):
     """
     def __init__ (self, 
                   era = 1000,
-                  cooling = 0.9,
+                  cooling = 0.95,
                   perturbation = 0.1,
                   perturbed = 0.1,
-                  tabusize = 10):
+                  tabusize = 400):
         """
         Initialize.
 
@@ -436,33 +437,117 @@ class HybridTabuAnnealing (Algorithm):
         self.perturbed = perturbed
         self.tabusize = tabusize
 
-        self.t = 10
-        self.tabu = set()
+        self.t = 500
+        self.tabu = collections.deque(())
 
 
 
-    def shiftleft(self, tour):
-        pass
+    def shiftleft(self, tour, dists, details):
+        """ 
+        One shift left operation.
 
-    def shiftright (self, tour):
-        pass
+        """
+        waits, delays = details
+        
+        if len(delays) > 0:
+            other = tour[random.randint(0, max(tour.index(moved := random.choice(delays))-1,0))]
+            counter = 0
+            while (op := ("shiftleft", other, moved) ) in self.tabu and (counter := counter + 1) < 1000:   # or dists[moved.id][other.id] != -1:
+                other = tour[random.randint(0, max(tour.index(moved := random.choice(delays))-1,0))]
 
-    def opt (self, tour):
-        pass
+            if len(self.tabu) == self.tabusize:
+                self.tabu.popleft()
+            self.tabu.append(op)
 
-    def swap (self, tour):
-        pass
+            tour = list(tour)
+            i1, i2 = tour.index(other), tour.index(moved)
+            tour.pop(i2)
+            tour.insert (i1, moved)
+
+        return list(tour)
 
 
 
 
-    def localsearch (self, tour, current_value, current_node, distances):
+
+    def shiftright (self, tour, dists, details):
+        """ 
+        One shift right operation.
+
+        """
+        waits, delays = details
+        
+        if len(waits) > 0:
+            other = tour[random.randint(tour.index(moved := random.choice(waits)), len(tour)-1)]
+            counter = 0
+            while (op := ("shiftright", other, moved) ) in self.tabu and (counter := counter + 1) < 1000: # or dists[moved.id][other.id] != -1:
+                other = tour[random.randint(tour.index(moved := random.choice(waits)), len(tour)-1)]
+        
+
+            if len(self.tabu) == self.tabusize:
+                self.tabu.popleft()
+            self.tabu.append(op)
+
+            tour = list(tour)
+            i1, i2 = tour.index(moved), tour.index(other)
+            tour.pop(i1)
+            tour.insert (i2, moved)
+
+        return list(tour)
+
+
+
+
+
+    def opt (self, tour, dists, details):
+        """ 
+        2-OPT operation.
+
+        """
+        while (op := ("opt", random.choice(tour), random.choice(tour)) ) in self.tabu: # or dists[op[1].id][op[2].id] != -1:
+            continue
+
+        if len(self.tabu) == self.tabusize:
+            self.tabu.popleft()
+        self.tabu.append(op)
+
+        tour = list(tour)
+        i1, i2 = tour.index(op[1]), tour.index(op[2])
+
+        return tour[:min(i1, i2)] + list(reversed(tour[min(i1, i2):max(i1, i2)])) + tour[max(i1, i2):]
+
+
+
+
+    def swap (self, tour, dists, details):
+        """ 
+        2-OPT operation.
+
+        """
+        while (op := ("swap", random.choice(tour), random.choice(tour)) ) in self.tabu: # or dists[op[1].id][op[2].id] != -1:
+            continue
+
+        if len(self.tabu) == self.tabusize:
+            self.tabu.popleft()
+        self.tabu.append(op)
+
+        tour = list(tour)
+        i1, i2 = tour.index(op[1]), tour.index(op[2])
+        tour[i1] = op[2]; tour[i2] = op[1]
+
+        return tour
+
+
+
+
+
+    def localsearch (self, tour, current_value, current_node, distances, dists, details):
         """
         Generation of another solution in the neighbourhood.
 
         """
         func = random.choice((self.shiftleft, self.shiftright, self.opt, self.swap))
-        tour = func(tour)
+        tour = func(tour, dists, details)
 
         # Eventual perturbation
         if (r := random.random()) < self.perturbation:
@@ -472,7 +557,22 @@ class HybridTabuAnnealing (Algorithm):
 
         return self.evaluate(tuple(tour), current_value, current_node, distances)
 
-
+    
+    
+    def get_details(self, solution, current_value, current_node, distances):
+        waits, delays = [], []
+        value, delay, cnode = current_value, 0, current_node
+        for node in solution.result:
+            if node.open - value + distances[cnode.id][node.id] > 0:
+                waits.append(node)
+            value = max(node.open, value + distances[cnode.id][node.id])
+            
+            if value - node.close > 0:
+                delays.append(node)
+            delay += max(0, value - node.close) 
+            cnode = node
+            
+        return tuple(waits), tuple(delays)
 
 
 
@@ -489,21 +589,47 @@ class HybridTabuAnnealing (Algorithm):
                     dists[n1.id][n2.id] = -1
 
         # Sort nodes by ascending closing time
-        tour.sort(key=lambda i: i.close)
+        tour = sorted(tour, key=lambda i: i.close)
 
         # Starting solution
         x = self.evaluate(tuple(tour), current_value, current_node, distances)
-
+        
+        waits, delays = self.get_details(x, current_value, current_node, distances)
+        
+        
+        # Make sure the starting solution is feasible with no delay
+        #counter = 0
+        while x.delay > 0:
+            x_new = self.localsearch (tuple(x.result), current_value, current_node, distances, dists, (waits, delays))
+            if x_new.delay < x.delay:
+                x = x_new
+                waits, delays = self.get_details(x, current_value, current_node, distances)
+            """
+            else:
+                counter += 1
+                if counter > 100:
+                    print("shuffle")
+                    counter = 0
+                    tour = random.sample(tour, len(tour))
+                    x = self.evaluate(tuple(tour), current_value, current_node, distances)
+                    waits, delays = self.get_details(x, current_value, current_node, distances)"""
+        print("made feasible")
+        
         for _ in range (self.era):
+            
             # New solution in the neighbourhood
-            x_new = self.localsearch (tour, current_value, current_node, distances)
+            x_new = self.localsearch (tuple(x.result), current_value, current_node, distances, dists, (waits, delays))
 
             # Eventually update the best
             r = random.random()
             if (i := cost(x_new)) < (j := cost(x)) or r > math.exp(- (i-j) / self.t):
                 x = x_new
+                waits, delays = self.get_details(x, current_value, current_node, distances)
+                
 
             # Update the temperature
             self.t *= 0.9
-
+            print(x.value, x.delay)
+            
+        
         self.set_best_solution(x)
