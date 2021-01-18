@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -43,6 +44,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from collections import namedtuple
 
+from typing import Tuple, Dict, Optional, cast
 
 
 
@@ -81,7 +83,7 @@ Solution = namedtuple("Solution", "result value delay")
     
     
     
-def cost (solution):
+def cost (solution : Solution) -> int:
     """
     The cost of the solution is calculated considering:
         - The travel time.
@@ -96,7 +98,7 @@ def cost (solution):
 
 
 
-def euclidean (node1, node2):
+def euclidean (node1 : Node, node2 : Node) -> int:
     """
     This function calculates the euclidean distance between two nodes.
 
@@ -152,7 +154,7 @@ class Algorithm (ABC):
     """
 
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize.
 
@@ -164,7 +166,7 @@ class Algorithm (ABC):
 
 
     @abstractmethod
-    def exe (self, current_value, tour, current_node, distances):
+    def exe (self, current_value : int, tour : Tuple[Node,...], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
         """
         This is the method to override for the execution of the algorithm.
         All the main procedure of the implemented algorithm must be written in this method.
@@ -184,7 +186,7 @@ class Algorithm (ABC):
 
 
     @staticmethod
-    def evaluate (tour, current_value, current_node, distances):
+    def evaluate (tour : Tuple[Node,...], current_value : int, current_node : Node, distances : Dict[int,Dict[int,int]]) -> Solution:
         """
         This function can be used by all the algorithms implemented
         in this library to evaluate a solution, once the nodes to visit
@@ -205,7 +207,7 @@ class Algorithm (ABC):
 
 
     @property
-    def get_best_result (self):
+    def get_best_result (self) -> Tuple[Tuple[Node,...], int, int]:
         """
         This property returns the best solution found so far, its cost, and the cumulated delay.
         If the best solution has not been set already, an Exception is returned.
@@ -223,7 +225,7 @@ class Algorithm (ABC):
 
 
     @property
-    def get_best_solution (self):
+    def get_best_solution (self) -> Solution:
         """
         This property returns the best solution found so far by returning the solution
         instance in itself with all its attributes.
@@ -241,7 +243,7 @@ class Algorithm (ABC):
 
 
 
-    def set_best_solution (self, best):
+    def set_best_solution (self, best : Solution) -> None:
         """
         This method sets the best solution of the algorithm.
         """
@@ -270,12 +272,13 @@ class DivideEtImpera:
     """
 
     def __init__(self,
-                algorithm,
-                nodes, 
-                p = 30,
-                max_split = 10,
-                base_node_id = 1,
-                goback = True):
+                algorithm : Algorithm,
+                nodes : Dict[int, Node], 
+                p : int = 30,
+                max_split : int = 10,
+                base_node_id : int = 1,
+                goback : bool = True
+                ) -> None:
         """
         Initialize.
 
@@ -326,7 +329,7 @@ class DivideEtImpera:
 
 
 
-    def _reset (self):
+    def _reset (self) -> None:
         """
         This <private> method reset the current solution of the algorithm.
         It should be used to build a new one.
@@ -341,7 +344,7 @@ class DivideEtImpera:
 
 
 
-    def exe (self, tour=None):
+    def exe (self, tour : Optional[Tuple[Node,...]] = None) -> Solution:
         """
         This method is the core of the algorithm.
 
@@ -400,7 +403,7 @@ class DivideEtImpera:
 
 
 
-    def _solve_tour (self, tour):
+    def _solve_tour (self, tour : Tuple[Node,...]) -> None:
         """
         This <private> method executes the algorithm on a subset of the nodes, and 
         updates the current solution.
