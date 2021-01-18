@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+from typing import Dict, Tuple
 import dei
 
-def read_benchmark (filename, path="./benchmarks/", delimiter=" "):
+def read_benchmark (filename : str, path : str = "./benchmarks/", delimiter : str = " ") -> Dict[int, dei.Node]:
     nodes = {}
     with open(path + filename) as file:
         for i, row in enumerate(file):
@@ -18,7 +21,7 @@ def read_benchmark (filename, path="./benchmarks/", delimiter=" "):
 
 
 
-filenames = (
+filenames : Tuple[str,...] = (
     "n200w100.001.txt",  "n250w100.001.txt",  "n300w100.001.txt",  "n400w100.001.txt",
     "n200w100.002.txt",  "n250w100.002.txt",  "n300w100.002.txt",  "n400w100.002.txt",
     "n200w100.003.txt",  "n250w100.003.txt",  "n350w100.003.txt",  "n400w100.003.txt",
