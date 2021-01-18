@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -28,10 +29,12 @@ Libraries imported from Python 3 standard library.
 import random
 import copy
 import math
-import numpy
+import numpy # type: ignore
 import itertools
-import collections
+import collections # type: ignore
 import matplotlib.pyplot as plt
+
+from typing import Tuple, Dict, List, Optional, cast
 
 
 """
@@ -64,7 +67,7 @@ class Shuffler (Algorithm):
 
 
 
-    def __init__ (self):
+    def __init__ (self) -> None:
         """
         Initialize.
         """
@@ -74,7 +77,7 @@ class Shuffler (Algorithm):
 
 
 
-    def exe (self, current_value, tour, current_node, distances):
+    def exe (self, current_value : int, tour : Tuple[Node,...], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
         """
         This is the execution method of the algorithm.
 
@@ -105,7 +108,7 @@ class RandomSearch (Algorithm):
 
 
 
-    def __init__ (self, iter = 1000):
+    def __init__ (self, iter : int = 1000) -> None:
         """
         Initialize.
 
@@ -120,7 +123,7 @@ class RandomSearch (Algorithm):
 
 
 
-    def exe (self, current_value, tour, current_node, distances):
+    def exe (self, current_value : int, tour : Tuple[Node,...], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
         """
         This is the execution method of the algorithm. It inherits from the exe abstract
         method in the Algorithm abstract class.
@@ -173,7 +176,7 @@ class TwoOpt (Algorithm):
         
         
         
-    def exe (self, current_value, tour, current_node, distances):
+    def exe (self, current_value : int, tour : Tuple[Node,...], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
         """
         This method is the execution of the algorithm. Please refer to the 
         beginning of the class for a more accurate description of the 
@@ -232,7 +235,7 @@ class Greedy (Algorithm):
     
     """
     
-    def __init__ (self, alpha = 0.999, beta = 1.0):
+    def __init__ (self, alpha : float = 0.999, beta : float = 1.0):
         """
         Initialize.
         
@@ -253,7 +256,7 @@ class Greedy (Algorithm):
         
     
     @staticmethod
-    def _costof (node, current_node, current_value, distances):
+    def _costof (node : Node, current_node : Node, current_value : int, distances : Dict[int, Dict[int,int]]) -> int:
         """
         This is the cost method used to evaluate the nodes and define their probability
         to be selected. Obviously, only nodes not included yet in the current solution
@@ -267,7 +270,7 @@ class Greedy (Algorithm):
     
     
     @staticmethod
-    def _bra (lst, alpha):
+    def _bra (lst : Tuple[Node,...], alpha : float) -> Node:
         """
         This method implements the biased randomisation by returning an 
         element form a list, according to a quasi-geometric function.
@@ -284,7 +287,7 @@ class Greedy (Algorithm):
         
         
         
-    def exe (self, current_value, tour, current_node, distances):
+    def exe (self, current_value : int, tour : Tuple[Node,...], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
         """
         This is the execution method.
         
@@ -358,7 +361,7 @@ class BiasedRandomised (Algorithm):
     
     
     
-    def __init__ (self, alpha=0.9, starting_beta=0.1, delta_beta=0.1, iter=3000):
+    def __init__ (self, alpha : float = 0.9, starting_beta : float = 0.1, delta_beta : float = 0.1, iter : int = 3000) -> None:
         """
         Initialize.
         
@@ -377,7 +380,7 @@ class BiasedRandomised (Algorithm):
         
         
     
-    def exe (self, current_value, tour, current_node, distances):
+    def exe (self, current_value : int, tour : Tuple[Node,...], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
         """
         This is the execution method.
         
@@ -416,11 +419,11 @@ class HybridTabuAnnealing (Algorithm):
 
     """
     def __init__ (self, 
-                  era = 1000,
-                  cooling = 0.95,
-                  perturbation = 0.1,
-                  perturbed = 0.1,
-                  tabusize = 400):
+                  era : int = 1000,
+                  cooling : float = 0.95,
+                  perturbation : float = 0.1,
+                  perturbed : float = 0.1,
+                  tabusize : int = 400):
         """
         Initialize.
 
@@ -442,7 +445,7 @@ class HybridTabuAnnealing (Algorithm):
 
 
 
-    def shiftleft(self, tour, dists, details):
+    def shiftleft(self, tour : Tuple[Node,...], dists : Dict[int,Dict[int,int]], details : Tuple[Tuple[Node,...], Tuple[Node,...]) -> List[Node]:
         """ 
         One shift left operation.
 
@@ -470,7 +473,7 @@ class HybridTabuAnnealing (Algorithm):
 
 
 
-    def shiftright (self, tour, dists, details):
+    def shiftright (self, tour : Tuple[Node,...], dists : Dict[int,Dict[int,int]], details : Tuple[Tuple[Node,...], Tuple[Node,...]) -> List[Node]:
         """ 
         One shift right operation.
 
@@ -499,7 +502,7 @@ class HybridTabuAnnealing (Algorithm):
 
 
 
-    def opt (self, tour, dists, details):
+    def opt (self, tour : Tuple[Node,...], dists : Dict[int,Dict[int,int]], details : Tuple[Tuple[Node,...], Tuple[Node,...]) -> List[Node]:
         """ 
         2-OPT operation.
 
@@ -519,7 +522,7 @@ class HybridTabuAnnealing (Algorithm):
 
 
 
-    def swap (self, tour, dists, details):
+    def swap (self, tour : Tuple[Node,...], dists : Dict[int,Dict[int,int]], details : Tuple[Tuple[Node,...], Tuple[Node,...]) -> List[Node]:
         """ 
         2-OPT operation.
 
@@ -541,7 +544,14 @@ class HybridTabuAnnealing (Algorithm):
 
 
 
-    def localsearch (self, tour, current_value, current_node, distances, dists, details):
+    def localsearch (self, 
+                     tour : Tuple[Node,...], 
+                     current_value : int, 
+                     current_node : Node, 
+                     distances : Dict[int,Dict[int,int]], 
+                     dists : Dict[int,Dict[int,int]], 
+                     details : Tuple[Tuple[Node,...],Tuple[Node,...]]
+                    ) -> Solution:
         """
         Generation of another solution in the neighbourhood.
 
@@ -559,7 +569,7 @@ class HybridTabuAnnealing (Algorithm):
 
     
     
-    def get_details(self, solution, current_value, current_node, distances):
+    def get_details(self, solution : Solution, current_value : int, current_node : Node, distances : Dict[int, Dict[int,int]]) -> Tuple[Tuple[Node,...],Tuple[Node,...]]:
         waits, delays = [], []
         value, delay, cnode = current_value, 0, current_node
         for node in solution.result:
@@ -579,7 +589,7 @@ class HybridTabuAnnealing (Algorithm):
 
 
 
-    def exe (self, current_value, tour, current_node, distances):
+    def exe (self, current_value : int, tour : Tuple[Node,...], current_node : Node, distances : Dict[int,Dict[int,int]]) -> None:
 
         # Preprocessing
         dists = copy.deepcopy(distances)
