@@ -11,7 +11,7 @@ very complex problems (i.e. when the list of nodes to visit is made of 100 eleme
 
 
 The mechanism is based on the fact that a long set of nodes, in case of TSPTW, might be split
-into two smaller subsets. Let's assume j = 1...N the nodes (i.e. customers) to visit, Sj the 
+into two smaller subsets. Let's assume j = 1...N the nodes (i.e. customers) to visit, Sj the
 opening time of the node j, and Ej the closing time of the node j.
 Once a generic node j is considered, the set of nodes might be split into two subsets simply
 considering that all the nodes which close before Sj must be visited before j.
@@ -39,17 +39,17 @@ Libraries imported from Python 3 standard library.
 """
 import random
 import copy
-import numpy as np
+import numpy as np # type: ignore
 
 from abc import ABC, abstractmethod
 from collections import namedtuple
 
-from typing import Tuple, Dict, Optional, cast
+from typing import Tuple, Dict, Optional, List, cast
 
 
 
 """
-This class represent a node of the graph, which is representative of a 
+This class represent a node of the graph, which is representative of a
 customer or location to be visited within a certain time window, which
 goes from its <readytime> to its <duedate>.
 
@@ -76,20 +76,20 @@ This class represents a solution of the algorithm.
 :attr delay: the delay cumulated during the tour.
 """
 Solution = namedtuple("Solution", "result value delay")
-    
 
 
 
-    
-    
-    
+
+
+
+
 def cost (solution : Solution) -> int:
     """
     The cost of the solution is calculated considering:
         - The travel time.
         - The cumulated waiting time every time a node is reached before its opening time.
         - The cumulated delay as a sort of Lagrangian relaxation to penalise the solutions
-          that reach the nodes after the closing time. 
+          that reach the nodes after the closing time.
     """
     return solution.value + solution.delay
 
@@ -132,7 +132,7 @@ class BestNotDefined (Exception):
 
 class BaseNotFound (Exception):
     """
-    This exception is raise by the DivideEtImpera if the base_node is not in 
+    This exception is raise by the DivideEtImpera if the base_node is not in
     the list of nodes to visit which has been provided.
 
     """
@@ -147,7 +147,7 @@ class BaseNotFound (Exception):
 class Algorithm (ABC):
     """
     This is an abstract class the algorithms included in the Divide Et Impera must inherit from.
-    
+
     It handles all the operations regarding the best solution, which must be standardized
     for an implementation in the DivideEtImpera.
 
@@ -160,7 +160,7 @@ class Algorithm (ABC):
 
         It only initialize the best solution.
         """
-        self.__bestsolution = None
+        self.__bestsolution : Optional[Solution] = None
 
 
 
@@ -173,7 +173,7 @@ class Algorithm (ABC):
 
         This method do not must return something.
         The best solution found with the procedure will be returned next by using get_best_solution property.
-        
+
         :param current_value: The current time when started this part of the tour (necessary
                                 for delays).
         :param tour: The nodes to visit
@@ -181,7 +181,7 @@ class Algorithm (ABC):
         :param distances: The distance matrix of the graph
 
         """
-        pass
+        ...
 
 
 
@@ -191,15 +191,15 @@ class Algorithm (ABC):
         This function can be used by all the algorithms implemented
         in this library to evaluate a solution, once the nodes to visit
         have been set in the desired order.
-        Given the tour, the current value, and the current node, the function 
+        Given the tour, the current value, and the current node, the function
         returns a solution after calculating its value and delay.
-        
+
         """
         value, delay = current_value, 0
         current = current_node
         for node in tour:
             value = max(node.open, value + distances[current.id][node.id])
-            delay += max(0, value - node.close) 
+            delay += max(0, value - node.close)
             current = node
         return Solution(tour, value, delay)
 
@@ -265,7 +265,7 @@ class DivideEtImpera:
     - The target are very big problems difficult to solve with a normal metaheuristic.
     - This framework can include both heuristic and metaheuristic techniques, and it can have both
         a heuristic or a metaheuristic behaviour.
-    
+
     The algorithm included (e.g. a heuristic or a metaheuristic) must inherit from the Algorithm class written above.
 
 
@@ -273,7 +273,7 @@ class DivideEtImpera:
 
     def __init__(self,
                 algorithm : Algorithm,
-                nodes : Dict[int, Node], 
+                nodes : Dict[int, Node],
                 p : int = 30,
                 max_split : int = 10,
                 base_node_id : int = 1,
@@ -305,10 +305,10 @@ class DivideEtImpera:
 
         if (base:=nodes.get(base_node_id)):
             self.base_node = base
-            
+
         else:
             raise BaseNotFound(str(base_node_id) + ' is not in nodes list')
-            
+
 
 
         self.algorithm = algorithm
@@ -317,13 +317,14 @@ class DivideEtImpera:
         self.goback = goback
 
         self.current_node = self.base_node
-        
+
         self.distances = {i : {j : euclidean(nodes[i],nodes[j]) for j in nodes} for i in nodes}
-        
-        self.tour = tuple(n for n in nodes.values() if n != self.base_node)
-        
-        self.solution = None
-        self.result, self.value, self.delay = [], 0, 0
+
+        self.tour : Tuple[Node,...] = tuple(n for n in nodes.values() if n != self.base_node)
+
+        self.solution : Optional[Solution] = None
+        self.result : List[Node] = []
+        self.value, self.delay = 0, 0
 
 
 
@@ -356,9 +357,9 @@ class DivideEtImpera:
         each of these subsets beginning from the one to visit before.
 
         It might happen that, even if the tour is too long and must be divided, the partition
-        node (which is uniformly selected) do not splits the tour. In this case, a new 
+        node (which is uniformly selected) do not splits the tour. In this case, a new
         partition node is selected, and this process is eventually repeated up to max_split
-        times. If after max_split times, every partition node did not split the tour, the 
+        times. If after max_split times, every partition node did not split the tour, the
         tour is considered as not splittable, and it is solved by using the algorithm.
 
         :param tour: <tuple> The set of nodes
@@ -369,14 +370,14 @@ class DivideEtImpera:
         tour = tuple(random.sample(t, len(t)))
 
         if len(tour) > self.p:
-            
+
             split, max_split = 0, self.max_split
-            first_part = tuple()
-            second_part = tuple()
+            first_part : Tuple[Node, ...]
+            second_part : Tuple[Node, ...]
 
 
             while (not first_part or not second_part) and split < max_split:
-                
+
                 partition_node = random.choice(tour)
                 split += 1
 
@@ -405,7 +406,7 @@ class DivideEtImpera:
 
     def _solve_tour (self, tour : Tuple[Node,...]) -> None:
         """
-        This <private> method executes the algorithm on a subset of the nodes, and 
+        This <private> method executes the algorithm on a subset of the nodes, and
         updates the current solution.
 
         :param tour: The subset of nodes
