@@ -372,8 +372,8 @@ class DivideEtImpera:
         if len(tour) > self.p:
 
             split, max_split = 0, self.max_split
-            first_part : Tuple[Node, ...]
-            second_part : Tuple[Node, ...]
+            first_part : Tuple[Node, ...] = tuple()
+            second_part : Tuple[Node, ...] = tuple()
 
 
             while (not first_part or not second_part) and split < max_split:
