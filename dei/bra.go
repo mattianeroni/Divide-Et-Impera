@@ -9,7 +9,7 @@ import (
 type BRA struct {
 
 	alpha, beta, betastart, betastep float64		// Parameters of the algorithm
-	maxiter int 									// Maximum number of iterations
+	maxiter int 						// Maximum number of iterations
 
 	solution Solution
 	value, delay int
