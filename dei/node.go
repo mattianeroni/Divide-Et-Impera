@@ -17,7 +17,7 @@ func NewNode (id, x, y, open, close int ) *Node {
 // The cost of a node given a specific situation
 func (self *Node) Cost (cnode Node, dists [][]int, value int) int {
 	var d int = dists[cnode.id][self.id]
-	return int(math.Max(float64(self.open), float64(value + d)) + math.Max(0, float64(value + d - self.close)))
+	return int(math.Max(float64(self.open), float64(value + d)) - math.Max(0, float64(value + d - self.close)))
 }
 
 
