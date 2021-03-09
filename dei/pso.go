@@ -39,10 +39,10 @@ func reverse(list []*Node) []*Node {
 // Particle Swarm Optimization
 type PSO struct {
 
-	solution          		Solution		// The last solution found
-	value, delay          		 int		// The value and the delay of the last solution
-	maxiter, maxnoimp   	     int		// The maximum number of iterations and iterations without improvement
-	swarm     		     []*Particle		// The swarm of particles
+	solution Solution		// The last solution found
+	value, delay int		// The value and the delay of the last solution
+	maxiter, maxnoimp int		// The maximum number of iterations and iterations without improvement
+	swarm []*Particle		// The swarm of particles
 
 }
 
@@ -129,12 +129,12 @@ func (self *PSO) execute (path []*Node, dists [][]int, value int, cnode *Node){
 // A particle of the particle swarm optimization
 type Particle struct {
 
-	beta, deepsearch 					 float64		// The parameter of the biased randomised selection and
-														// the probability of a deepsearch.
+	beta, deepsearch float64		// The parameter of the biased randomised selection and
+						// the probability of a deepsearch.
 
-	greedy, intention, pbest             []*Node		// The solutions considered and known by each particle
-	vgreedy, vintention, vpbest				 int		// The value of the solutions above.
-	dgreedy, dintention, dpbest 			 int		// The delay associated to the solutions above.
+	greedy, intention, pbest []*Node	// The solutions considered and known by each particle
+	vgreedy, vintention, vpbest int		// The value of the solutions above.
+	dgreedy, dintention, dpbest int		// The delay associated to the solutions above.
 
 }
 
