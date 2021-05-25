@@ -55,14 +55,11 @@ class DivideEtImpera (object):
                 second = tuple(set(first) - set(tour))
 
                 if len(first) > 0 and len(second) > 0:
+                    self.__call__(first)
+                    self.__call__(second)
                     break
-
-            if len(first) == 0 and len(second) == 0:
-                self.solve(tour)
             else:
-                self.__call__(first)
-                self.__call__(second)
-
+                self.solve(tour)
         else:
             self.solve(tour)
 
